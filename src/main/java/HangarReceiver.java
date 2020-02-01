@@ -32,10 +32,15 @@ public class HangarReceiver extends Thread {
     }
 
     private void runTask(final Socket socket, Queue<Message> messageQueue) {
+        // Here this thread constantly get the Message object out of the stream
+        // and put it into the incoming message queue
+        // to be retrieved later
         pool.execute(new Runnable() {
             @Override
 			public void run() {
                 SocketAddress localSocketAddress = socket.getLocalSocketAddress();
+                
+                // get the Message object out of the stream HERE
                 try (ObjectInputStream in = new ObjectInputStream(socket.getInputStream());) {
                     Message input;
                     // check if the message queue implementation used is thread-safe
@@ -43,6 +48,7 @@ public class HangarReceiver extends Thread {
                     boolean result = false;
                     while (true) {
                         while ((input = (Message) in.readObject()) != null) {
+                            // enqueuing Messages object into the queue HERE
                             if (lock) {
                                 // message queue not thread-safe, lock it
                                 synchronized (messageQueue) {

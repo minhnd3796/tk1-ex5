@@ -41,33 +41,55 @@ public class MainWindow extends JFrame {
 		MainWindow mainWindow = new MainWindow();
 		mainWindow.setVisible(true);
 		try {
+			// create 6 communication channels
+			// each hangar has 2 channels
 			ServerSocket channel12 = new ServerSocket(H12PORT);
 			ServerSocket channel13 = new ServerSocket(H13PORT);
 			ServerSocket channel21 = new ServerSocket(H21PORT);
 			ServerSocket channel23 = new ServerSocket(H23PORT);
 			ServerSocket channel31 = new ServerSocket(H31PORT);
 			ServerSocket channel32 = new ServerSocket(H32PORT);
+
+			// create 3 hangars
+			// each hangar can send to 2 other hangars
+			// so each hangar can use 2 communication channel
+			// to send planes to 2 other hangars
 			Hangar hangar1 = new Hangar("H1", H12PORT, H13PORT);
 			Hangar hangar2 = new Hangar("H2", H21PORT, H23PORT);
 			Hangar hangar3 = new Hangar("H3", H31PORT, H32PORT);
+
+			// there are 6 threads for 6 communication channels
+			// each thread get the messgage out of the communication stream
+			// and put it into the corresponding message queue
+			// each queue of each hangar should be received messages from 2 other channels (hangars)
 			HangarReceiver channel12Thread = new HangarReceiver(channel12, hangar2.getReceivedMessageQueue());
 			HangarReceiver channel13Thread = new HangarReceiver(channel13, hangar3.getReceivedMessageQueue());
 			HangarReceiver channel21Thread = new HangarReceiver(channel21, hangar1.getReceivedMessageQueue());
 			HangarReceiver channel23Thread = new HangarReceiver(channel23, hangar3.getReceivedMessageQueue());
 			HangarReceiver channel31Thread = new HangarReceiver(channel31, hangar1.getReceivedMessageQueue());
 			HangarReceiver channel32Thread = new HangarReceiver(channel32, hangar2.getReceivedMessageQueue());
+
+			// create 3 threads, used to dispatch the received message from queue
+			// with simulated communication delay
 			MessageQueueDispatcher messageQueueDispatcher1 = new MessageQueueDispatcher(hangar1);
 			MessageQueueDispatcher messageQueueDispatcher2 = new MessageQueueDispatcher(hangar2);
 			MessageQueueDispatcher messageQueueDispatcher3 = new MessageQueueDispatcher(hangar3);
+
+			// start all hangar thread to constantly send planes to each other
 			hangar1.start();
 			hangar2.start();
 			hangar3.start();
+
+			// start 6 communication threads to get messages out of the each object stream
+			// and put them into the received message queues
 			channel12Thread.start();
 			channel13Thread.start();
 			channel21Thread.start();
 			channel23Thread.start();
 			channel31Thread.start();
 			channel32Thread.start();
+
+			// start 3 message queue dispatcher for each hangar
 			messageQueueDispatcher1.start();
 			messageQueueDispatcher2.start();
 			messageQueueDispatcher3.start();

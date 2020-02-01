@@ -7,10 +7,21 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Hangar extends Thread {
+    // name of the Hangar ("H1", "H2" or "H3")
     private String hangarName;
+
+    // current number of planes in each hangar
+    // should be atomic int, to avoid this var being edited by multiple
+    // threads at the same time => planes are not preserved
     private AtomicInteger numAirplanes;
+
+    // get random seed for each hangar
     private Random randomiser;
+
+    // incoming message queue (FIFO structure)
     private Queue<Message> receivedMessageQueue;
+
+    // the first and second destination of this hangar
     private Socket destSocket1;
     private Socket destSocket2;
     private ObjectOutputStream objectOutputStream1;
@@ -46,9 +57,16 @@ public class Hangar extends Thread {
     }
 
     private void sendAirplanes() {
+        // number of transferred planes is randomly generated between 1 and 5
+        // if the number of remaining planes in this hangar are less than the generated number
+        // then the number of transferred planes equals to the remaining number
         int numSentAirplanes = 0;
         while (numSentAirplanes == 0) {
             numSentAirplanes = this.randomiser.nextInt(5) + 1;
+            // the CURRENT number of remaing planes HAS TO BE SAVED into another var
+            // because it can be modified concurrently by other threads
+            // when it comes to the next this.numAirplanes.get() statement
+            // so try to get that number right before the assignment statement
             int concurrentNumAirplanes = this.numAirplanes.get();
             if (numSentAirplanes > concurrentNumAirplanes)
                 numSentAirplanes = concurrentNumAirplanes;
@@ -90,7 +108,6 @@ public class Hangar extends Thread {
 
     @Override
     public void run() {
-        
         while (true) {
             try {
                 Thread.sleep((this.randomiser.nextInt(4) + 1) * 1000);
