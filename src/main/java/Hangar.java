@@ -1,6 +1,5 @@
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
@@ -8,16 +7,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Hangar extends Thread {
+    private String hangarName;
     private AtomicInteger numAirplanes;
-    private ServerSocket serverSocket;
-    private Socket socket1;
-    private Socket socket2;
-    private Queue<Message> receivedMessageQueue;
     private Random randomiser;
+    private Queue<Message> receivedMessageQueue;
+    private Socket destSocket1;
+    private Socket destSocket2;
     private ObjectOutputStream objectOutputStream1;
     private ObjectOutputStream objectOutputStream2;
-    private int listeningPortNumber;
-    private String hangarName;
 
     public String getHangarName() {
         return this.hangarName;
@@ -31,36 +28,24 @@ public class Hangar extends Thread {
         return this.receivedMessageQueue;
     }
 
-    public ServerSocket getServerSocket() {
-        return this.serverSocket;
-    }
-
-    public Hangar(ServerSocket serverSocket, int listeningPortNumber, int hangarPort1, int hangarPort2)
-            throws IOException {
+    public Hangar(String hangarName, int incomingChannel1, int incomingChannel2) throws IOException {
         // initial number of airplanes in each Hangar
+        this.hangarName = hangarName;
         this.numAirplanes = new AtomicInteger(10);
-        this.serverSocket = serverSocket;
-        this.listeningPortNumber = listeningPortNumber;
-        this.socket1 = new Socket("localhost", hangarPort1);
-        this.socket2 = new Socket("localhost", hangarPort2);
-        this.objectOutputStream1 = new ObjectOutputStream(this.socket1.getOutputStream());
-        this.objectOutputStream2 = new ObjectOutputStream(this.socket2.getOutputStream());
+        this.destSocket1 = new Socket("localhost", incomingChannel1);
+        this.destSocket2 = new Socket("localhost", incomingChannel2);
+        this.objectOutputStream1 = new ObjectOutputStream(this.destSocket1.getOutputStream());
+        this.objectOutputStream2 = new ObjectOutputStream(this.destSocket2.getOutputStream());
         this.receivedMessageQueue = new ConcurrentLinkedQueue<Message>();
-        if (this.listeningPortNumber == 37961)
-            this.hangarName = "Hangar 1";
-        else if (this.listeningPortNumber == 37962)
-            this.hangarName = "Hangar 2";
-        else
-            this.hangarName = "Hangar 3";
-        this.randomiser = new Random(this.listeningPortNumber);
+        this.randomiser = new Random(Integer.parseInt(this.hangarName.substring(this.hangarName.length() - 1)));
         
     }
 
-    public int getNumAirPlanes() {
+    public int getNumAirplanes() {
         return this.numAirplanes.get();
     }
 
-    private void sendAirPlanes() {
+    private void sendAirplanes() {
         int numSentAirplanes = 0;
         while (numSentAirplanes == 0) {
             numSentAirplanes = this.randomiser.nextInt(5) + 1;
@@ -75,20 +60,20 @@ public class Hangar extends Thread {
         try {
             String receivingHangarName = "";
             if (sentToHangar == 0) {
-                if (this.listeningPortNumber == 37961)
-                    receivingHangarName = "Hangar 2";
+                if (this.hangarName == "H1")
+                    receivingHangarName = "H2";
                 else
-                    receivingHangarName = "Hangar 1";
+                    receivingHangarName = "H1";
                 applicationMessage.setReceiver(receivingHangarName);
-                System.out.println(this.hangarName + " is sending " + numSentAirplanes + " airplanes to " + receivingHangarName);
+                System.out.println("Transfer: " + this.hangarName + " -> " + receivingHangarName + " " + "(" + numSentAirplanes + ")");
                 this.objectOutputStream1.writeObject(applicationMessage);
             } else {
-                if (this.listeningPortNumber == 37963)
-                    receivingHangarName = "Hangar 2";
+                if (this.hangarName == "H3")
+                    receivingHangarName = "H2";
                 else
-                    receivingHangarName = "Hangar 3";
+                    receivingHangarName = "H3";
                 applicationMessage.setReceiver(receivingHangarName);
-                System.out.println(this.hangarName + " is sending " + numSentAirplanes + " airplanes to " + receivingHangarName);
+                System.out.println("Transfer: " + this.hangarName + " -> " + receivingHangarName + " " + "(" + numSentAirplanes + ")");
                 this.objectOutputStream2.writeObject(applicationMessage);
             }
         } catch (IOException e) {
@@ -96,11 +81,10 @@ public class Hangar extends Thread {
         }
     }
 
-    public void receiveAirPlanes() {
+    public void receiveAirplanes() {
         Message receivedAppMessage = this.receivedMessageQueue.poll();
         int numReceivedAirplanes = receivedAppMessage.getNumSentAirplanes();
         this.numAirplanes.addAndGet(numReceivedAirplanes);
-        System.out.println(this.hangarName + " successfully dispatched " + numReceivedAirplanes + " from " + receivedAppMessage.getSender() + ". Now it has " + this.getNumAirPlanes());
     }
 
     @Override
@@ -113,8 +97,8 @@ public class Hangar extends Thread {
             //     // TODO Auto-generated catch block
             //     e.printStackTrace();
             // }
-            sendAirPlanes();
-            System.out.println(this.hangarName + " has " + this.numAirplanes + " remaining!");
+            sendAirplanes();
+            // System.out.println(this.hangarName + " has " + this.numAirplanes + " remaining!");
         }
     }
 }

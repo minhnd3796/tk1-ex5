@@ -31,27 +31,43 @@ public class MainWindow extends JFrame {
 	private JButton snapshot3Button;
 
 	public static void main(String[] args) {
+		final int H12PORT = 9612;
+		final int H13PORT = 9613;
+		final int H21PORT = 9621;
+		final int H23PORT = 9623;
+		final int H31PORT = 9631;
+		final int H32PORT = 9632;
+
 		MainWindow mainWindow = new MainWindow();
 		mainWindow.setVisible(true);
 		try {
-			ServerSocket serverSocket1 = new ServerSocket(37961);
-			ServerSocket serverSocket2 = new ServerSocket(37962);
-			ServerSocket serverSocket3 = new ServerSocket(37963);
-			Hangar hangar1 = new Hangar(serverSocket1, 37961, 37962, 37963);
-			Hangar hangar2 = new Hangar(serverSocket2, 37962, 37961, 37963);
-			Hangar hangar3 = new Hangar(serverSocket3, 37963, 37961, 37962);
-			HangarReceiver hangarReceiver1 = new HangarReceiver(hangar1);
-			HangarReceiver hangarReceiver2 = new HangarReceiver(hangar2);
-			HangarReceiver hangarReceiver3 = new HangarReceiver(hangar3);
+			ServerSocket channel12 = new ServerSocket(H12PORT);
+			ServerSocket channel13 = new ServerSocket(H13PORT);
+			ServerSocket channel21 = new ServerSocket(H21PORT);
+			ServerSocket channel23 = new ServerSocket(H23PORT);
+			ServerSocket channel31 = new ServerSocket(H31PORT);
+			ServerSocket channel32 = new ServerSocket(H32PORT);
+			Hangar hangar1 = new Hangar("H1", H12PORT, H13PORT);
+			Hangar hangar2 = new Hangar("H2", H21PORT, H23PORT);
+			Hangar hangar3 = new Hangar("H3", H31PORT, H32PORT);
+			HangarReceiver channel12Thread = new HangarReceiver(channel12, hangar2.getReceivedMessageQueue());
+			HangarReceiver channel13Thread = new HangarReceiver(channel13, hangar3.getReceivedMessageQueue());
+			HangarReceiver channel21Thread = new HangarReceiver(channel21, hangar1.getReceivedMessageQueue());
+			HangarReceiver channel23Thread = new HangarReceiver(channel23, hangar3.getReceivedMessageQueue());
+			HangarReceiver channel31Thread = new HangarReceiver(channel31, hangar1.getReceivedMessageQueue());
+			HangarReceiver channel32Thread = new HangarReceiver(channel32, hangar2.getReceivedMessageQueue());
 			MessageQueueDispatcher messageQueueDispatcher1 = new MessageQueueDispatcher(hangar1);
 			MessageQueueDispatcher messageQueueDispatcher2 = new MessageQueueDispatcher(hangar2);
 			MessageQueueDispatcher messageQueueDispatcher3 = new MessageQueueDispatcher(hangar3);
 			hangar1.start();
 			hangar2.start();
 			hangar3.start();
-			hangarReceiver1.start();
-			hangarReceiver2.start();
-			hangarReceiver3.start();
+			channel12Thread.start();
+			channel13Thread.start();
+			channel21Thread.start();
+			channel23Thread.start();
+			channel31Thread.start();
+			channel32Thread.start();
 			messageQueueDispatcher1.start();
 			messageQueueDispatcher2.start();
 			messageQueueDispatcher3.start();

@@ -14,8 +14,10 @@ public class MessageQueueDispatcher extends Thread {
             //     // TODO Auto-generated catch block
             //     e.printStackTrace();
             // }
-            if (!this.hangar.getReceivedMessageQueue().isEmpty())
-                this.hangar.receiveAirPlanes();
+            if (!this.hangar.getReceivedMessageQueue().isEmpty()) {
+                // System.out.println(this.hangar.getHangarName() + " currently has " + this.hangar.getNumAirplanes());
+                this.hangar.receiveAirplanes();
+            }
         }
         
     }
