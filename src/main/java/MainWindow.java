@@ -10,10 +10,14 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import java.io.IOException;
+
 
 public class MainWindow extends JFrame {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
 	private DefaultListModel<String> historyListModel;
 	private JList<String> historyList;
 
@@ -36,10 +40,21 @@ public class MainWindow extends JFrame {
 			Hangar hangar1 = new Hangar(serverSocket1, 37961, 37962, 37963);
 			Hangar hangar2 = new Hangar(serverSocket2, 37962, 37961, 37963);
 			Hangar hangar3 = new Hangar(serverSocket3, 37963, 37961, 37962);
+			HangarReceiver hangarReceiver1 = new HangarReceiver(hangar1);
+			HangarReceiver hangarReceiver2 = new HangarReceiver(hangar2);
+			HangarReceiver hangarReceiver3 = new HangarReceiver(hangar3);
+			MessageQueueDispatcher messageQueueDispatcher1 = new MessageQueueDispatcher(hangar1);
+			MessageQueueDispatcher messageQueueDispatcher2 = new MessageQueueDispatcher(hangar2);
+			MessageQueueDispatcher messageQueueDispatcher3 = new MessageQueueDispatcher(hangar3);
 			hangar1.start();
 			hangar2.start();
 			hangar3.start();
-			System.out.println("OK");
+			hangarReceiver1.start();
+			hangarReceiver2.start();
+			hangarReceiver3.start();
+			messageQueueDispatcher1.start();
+			messageQueueDispatcher2.start();
+			messageQueueDispatcher3.start();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
