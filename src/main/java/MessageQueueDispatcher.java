@@ -8,14 +8,13 @@ public class MessageQueueDispatcher extends Thread {
     @Override
     public void run() {
         while (true) {
-            // try {
-            //     Thread.sleep((this.hangar.getRandomiser().nextInt(3) + 1) * 1000);
-            // } catch (InterruptedException e) {
-            //     // TODO Auto-generated catch block
-            //     e.printStackTrace();
-            // }
+            try {
+                Thread.sleep((this.hangar.getRandomiser().nextInt(3) + 1) * 1000);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             if (!this.hangar.getReceivedMessageQueue().isEmpty()) {
-                // System.out.println(this.hangar.getHangarName() + " currently has " + this.hangar.getNumAirplanes());
                 this.hangar.receiveAirplanes();
             }
         }

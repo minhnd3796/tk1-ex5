@@ -49,7 +49,6 @@ public class HangarReceiver extends Thread {
                                     result = messageQueue.offer(input);
                                 }
                             } else {
-                                // System.out.println("Enqueing");
                                 result = messageQueue.offer(input);
                             }
                             if (!result) {

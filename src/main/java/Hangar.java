@@ -49,8 +49,9 @@ public class Hangar extends Thread {
         int numSentAirplanes = 0;
         while (numSentAirplanes == 0) {
             numSentAirplanes = this.randomiser.nextInt(5) + 1;
-            if (numSentAirplanes > this.numAirplanes.get())
-                numSentAirplanes = this.numAirplanes.get();
+            int concurrentNumAirplanes = this.numAirplanes.get();
+            if (numSentAirplanes > concurrentNumAirplanes)
+                numSentAirplanes = concurrentNumAirplanes;
         }
         this.numAirplanes.addAndGet(-numSentAirplanes);
         Message applicationMessage = new Message();
@@ -91,14 +92,13 @@ public class Hangar extends Thread {
     public void run() {
         
         while (true) {
-            // try {
-            //     Thread.sleep((this.randomiser.nextInt(4) + 1) * 1000);
-            // } catch (InterruptedException e) {
-            //     // TODO Auto-generated catch block
-            //     e.printStackTrace();
-            // }
+            try {
+                Thread.sleep((this.randomiser.nextInt(4) + 1) * 1000);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             sendAirplanes();
-            // System.out.println(this.hangarName + " has " + this.numAirplanes + " remaining!");
         }
     }
 }
