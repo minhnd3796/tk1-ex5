@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Queue;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -10,7 +11,6 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-
 
 public class MainWindow extends JFrame {
 
@@ -38,8 +38,6 @@ public class MainWindow extends JFrame {
 		final int H31PORT = 9631;
 		final int H32PORT = 9632;
 
-		MainWindow mainWindow = new MainWindow();
-		mainWindow.setVisible(true);
 		try {
 			// create 6 communication channels
 			// each hangar has 2 channels
@@ -58,10 +56,19 @@ public class MainWindow extends JFrame {
 			Hangar hangar2 = new Hangar("H2", H21PORT, H23PORT);
 			Hangar hangar3 = new Hangar("H3", H31PORT, H32PORT);
 
+			// start all hangar thread to constantly send planes to each other
+			hangar1.start();
+			hangar2.start();
+			hangar3.start();
+
+			MainWindow mainWindow = new MainWindow(hangar1, hangar2, hangar3);
+			mainWindow.setVisible(true);
+
 			// there are 6 threads for 6 communication channels
 			// each thread get the messgage out of the communication stream
 			// and put it into the corresponding message queue
-			// each queue of each hangar should be received messages from 2 other channels (hangars)
+			// each queue of each hangar should be received messages from 2 other channels
+			// (hangars)
 			HangarReceiver channel12Thread = new HangarReceiver(channel12, hangar2.getReceivedMessageQueue());
 			HangarReceiver channel13Thread = new HangarReceiver(channel13, hangar3.getReceivedMessageQueue());
 			HangarReceiver channel21Thread = new HangarReceiver(channel21, hangar1.getReceivedMessageQueue());
@@ -74,11 +81,6 @@ public class MainWindow extends JFrame {
 			MessageQueueDispatcher messageQueueDispatcher1 = new MessageQueueDispatcher(hangar1);
 			MessageQueueDispatcher messageQueueDispatcher2 = new MessageQueueDispatcher(hangar2);
 			MessageQueueDispatcher messageQueueDispatcher3 = new MessageQueueDispatcher(hangar3);
-
-			// start all hangar thread to constantly send planes to each other
-			hangar1.start();
-			hangar2.start();
-			hangar3.start();
 
 			// start 6 communication threads to get messages out of the each object stream
 			// and put them into the received message queues
@@ -99,7 +101,7 @@ public class MainWindow extends JFrame {
 		}
 	}
 
-	public MainWindow() {
+	public MainWindow(Hangar hangar1, Hangar hangar2, Hangar hangar3) {
 		setSize(400, 300);
 		setTitle("TK1-EX5");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -119,7 +121,7 @@ public class MainWindow extends JFrame {
 		// snapshot 1
 		snapshot1Label = new JLabel("Hangar 1 (#0)");
 		snapshot1Button = new JButton("Snapshot");
-		snapshot1Button.addActionListener(x -> snapshot(1));
+		snapshot1Button.addActionListener(x -> snapshot(1, hangar1, hangar2, hangar3));
 
 		JPanel snapshot1 = new JPanel();
 		snapshot1.setLayout(new GridLayout(2, 1));
@@ -130,7 +132,7 @@ public class MainWindow extends JFrame {
 		// snapshot 2
 		snapshot2Label = new JLabel("Hangar 2 (#0)");
 		snapshot2Button = new JButton("Snapshot");
-		snapshot2Button.addActionListener(x -> snapshot(1));
+		snapshot2Button.addActionListener(x -> snapshot(2, hangar1, hangar2, hangar3));
 
 		JPanel snapshot2 = new JPanel();
 		snapshot2.setLayout(new GridLayout(2, 1));
@@ -141,7 +143,7 @@ public class MainWindow extends JFrame {
 		// snapshot 3
 		snapshot3Label = new JLabel("Hangar 3 (#0)");
 		snapshot3Button = new JButton("Snapshot");
-		snapshot3Button.addActionListener(x -> snapshot(1));
+		snapshot3Button.addActionListener(x -> snapshot(3, hangar1, hangar2, hangar3));
 
 		JPanel snapshot3 = new JPanel();
 		snapshot3.setLayout(new GridLayout(2, 1));
@@ -152,9 +154,77 @@ public class MainWindow extends JFrame {
 		add(sidePanel, BorderLayout.EAST);
 	}
 
-	private void snapshot(int snapshot) {
+	private void snapshot(int initiatorHangarIndex, Hangar hangar1, Hangar hangar2, Hangar hangar3) {
 		// TODO
-		historyListModel.addElement("Snapshot ...");
+		historyListModel.addElement("Snapshot ... " + initiatorHangarIndex);
+		Hangar snapshotInitiatorHanger;
+		Hangar secondHangar;
+		Hangar thirdHangar;
+		if (initiatorHangarIndex == Integer
+				.parseInt(hangar1.getHangarName().substring(hangar1.getHangarName().length() - 1))) {
+			snapshotInitiatorHanger = hangar1;
+			secondHangar = hangar2;
+			thirdHangar = hangar3;
+		} else if (initiatorHangarIndex == Integer
+				.parseInt(hangar2.getHangarName().substring(hangar2.getHangarName().length() - 1))) {
+			snapshotInitiatorHanger = hangar2;
+			secondHangar = hangar1;
+			thirdHangar = hangar3;
+		} else {
+			snapshotInitiatorHanger = hangar3;
+			secondHangar = hangar1;
+			thirdHangar = hangar2;
+		}
+		snapshotInitiatorHanger.setSnapshotInitiator();
+		snapshotInitiatorHanger.recordLocalState();
+		snapshotInitiatorHanger.recordFirstIncomingChannel();
+		snapshotInitiatorHanger.recordSecondIncomingChannel();
+		snapshotInitiatorHanger.sendMarkerMessageToSecond();
+		snapshotInitiatorHanger.sendMarkerMessageToThird();
+
+		while (!snapshotInitiatorHanger.getReceivedMarkerFromFirstProcess()
+				|| !snapshotInitiatorHanger.getReceivedMarkerFromSecondProcess()
+				|| !secondHangar.getReceivedMarkerFromFirstProcess()
+				|| !secondHangar.getReceivedMarkerFromSecondProcess()
+				|| !thirdHangar.getReceivedMarkerFromFirstProcess()
+				|| !thirdHangar.getReceivedMarkerFromSecondProcess()) {
+			try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		// Collect local state and compute global state
+		// TODO
+		System.out.println();
+		System.out.println(">> Captured global state <<");
+		System.out.println(">> H1: " + hangar1.getLocalState());
+		System.out.println(">> H2: " + hangar2.getLocalState());
+		System.out.println(">> H3: " + hangar3.getLocalState());
+		printRecordedChannel(">> Channel 2 -> 1: ", hangar1.getFirstRecordedIncommingChannel());
+		printRecordedChannel(">> Channel 3 -> 1: ", hangar1.getSecondRecordedIncommingChannel());
+		printRecordedChannel(">> Channel 1 -> 2: ", hangar2.getFirstRecordedIncommingChannel());
+		printRecordedChannel(">> Channel 3 -> 2: ", hangar2.getSecondRecordedIncommingChannel());
+		printRecordedChannel(">> Channel 1 -> 3: ", hangar3.getFirstRecordedIncommingChannel());
+		printRecordedChannel(">> Channel 1 -> 3: ", hangar3.getSecondRecordedIncommingChannel());
+		System.out.println();
+
+		// Finish snapshot taking session
+		snapshotInitiatorHanger.completeSnapshotSession();
+		secondHangar.completeSnapshotSession();
+		thirdHangar.completeSnapshotSession();
 	}
 
+	private void printRecordedChannel(String channelName, Queue<Message> recordedChannel) {
+		if (recordedChannel.isEmpty()) {
+			System.out.println(channelName + "is empty");
+		} else {
+			for (Message recordedMessage : recordedChannel) {
+				System.out.print(channelName + recordedMessage.toString() + ", ");
+				System.out.println();
+			}
+		}
+	}
 }

@@ -1,11 +1,15 @@
 import java.io.Serializable;
 
-public class Message implements Serializable {
+public class Message implements Serializable, Cloneable {
     private static final long serialVersionUID = 1L;
     private boolean markerMessage;
     private int numSentAirplanes;
     private String sender;
     private String receiver;
+
+    public String toString() {
+        return this.numSentAirplanes + " are sent from " + sender + " to " + receiver;
+    }
 
     public Message() {
         this.markerMessage = false;
